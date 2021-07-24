@@ -7,6 +7,11 @@ import java.util.concurrent.TimeUnit;
 
 public class ThreadTest {
     public static void main(String[] args) {
+        threadPoolTest();
+    }
+
+    public static void threadPoolTest(){
+
         ExecutorService executorService = new ThreadPoolExecutor(1, 2, 100, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(1));
         for (int j = 0; j < 3; j++) {
             executorService.execute(() -> {
