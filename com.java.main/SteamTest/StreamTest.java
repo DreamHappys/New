@@ -1,9 +1,9 @@
 package SteamTest;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.math.BigInteger;
+import java.util.*;
+import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -43,15 +43,19 @@ class StreamDemo {
         list.stream().filter(x -> x > 6).forEach(System.out::println);// 遍历输出符合条件的元素
         Optional<Integer> findFirst = list.stream().filter(x -> x > 6).findFirst();// 匹配第一个
         Optional<Integer> findAny = list.parallelStream().filter(x -> x > 6).findAny();// 匹配任意（适用于并行流）
-
         boolean anyMatch = list.stream().anyMatch(x -> x < 6);// 是否包含符合特定条件的元素
         System.out.println("匹配第一个值：" + findFirst.get());
         System.out.println("匹配任意一个值：" + findAny.get());
         System.out.println("是否存在大于6的值：" + anyMatch);
     }
 
-
     public void streamFiliter() {
+        List<Person> personList = dataPersonsList();
+        List<String> fiterList = personList.stream().filter(x -> x.getSalary() > 8000).map(Person::getName).collect(Collectors.toList());
+        System.out.print("高于8000的员工姓名：" + fiterList);
+    }
+
+    private List<Person> dataPersonsList() {
         List<Person> personList = new ArrayList<Person>();
         personList.add(new Person("Tom", 8900, 23, "male", "New York"));
         personList.add(new Person("Jack", 7000, 25, "male", "Washington"));
@@ -59,16 +63,12 @@ class StreamDemo {
         personList.add(new Person("Anni", 8200, 24, "female", "New York"));
         personList.add(new Person("Owen", 9500, 25, "male", "New York"));
         personList.add(new Person("Alisa", 7900, 26, "female", "New York"));
-
-        List<String> fiterList = personList.stream().filter(x -> x.getSalary() > 8000).map(Person::getName)
-                .collect(Collectors.toList());
-        System.out.print("高于8000的员工姓名：" + fiterList);
+        return personList;
     }
 
     public void streamFlat() {
         List<String> list = Arrays.asList("m,k,l,a", "1,3,5,7");
-        List<String> listNew = list.stream().flatMap(s -> {
-            // 将每个元素转换成一个stream
+        List<String> listNew = list.stream().flatMap(s -> { // 将每个元素转换成一个stream
             String[] split = s.split(",");
             Stream<String> s2 = Arrays.stream(split);
             return s2;
@@ -80,20 +80,53 @@ class StreamDemo {
 
     public void streamReduce() {
         List<Integer> list = Arrays.asList(1, 3, 2, 8, 11, 4);
-
-        Optional<Integer> sum = list.stream().reduce((x, y) -> x + y);// 求和方式1
+        Optional<Integer> sum1 = list.stream().reduce((x, y) -> x + y);// 求和方式1
         Optional<Integer> sum2 = list.stream().reduce(Integer::sum);// 求和方式2
         Integer sum3 = list.stream().reduce(10, Integer::sum);// 求和方式3
 
         Optional<Integer> product = list.stream().reduce((x, y) -> x * y);// 求乘积
         Optional<Integer> max = list.stream().reduce((x, y) -> x > y ? y : x);// 求最大值方式1
-        Integer max2 = list.stream().reduce(12, Integer::min);// 求最大值写法2
+        Integer max2 = list.stream().reduce(12, Integer::max);// 求最大值写法2
 
-        System.out.println("list求和：" + sum.get() + "," + sum2.get() + "," + sum3);
+        System.out.println("list求和：" + sum1.get() + "," + sum2.get() + "," + sum3);
         System.out.println("list求积：" + product.get());
         System.out.println("list求和：" + max.get() + "," + max2);
+
+        List<Person> personList = dataPersonsList();
+        Optional<Integer> sumSalary = personList.stream().map(Person::getSalary).reduce(Integer::sum);// 求工资之和方式1：
+        Integer sumSalary2 = personList.stream().reduce(0, (integer, person) -> integer + person.getSalary(), new BinaryOperator<Integer>() {
+            @Override
+            public Integer apply(Integer integer, Integer integer2) {
+                return null;
+            }
+        });// 求工资之和方式2：
+        Integer sumSalary3 = personList.stream().reduce(0, (sum, p) -> sum += p.getSalary(), Integer::sum);// 求工资之和方式3：
+        Integer maxSalary = personList.stream().reduce(0, (m1, p) -> m1 > p.getSalary() ? m1 : p.getSalary(), Integer::max);// 求最高工资方式1：
+        Integer maxSalary2 = personList.stream().reduce(0, (m1, p) -> m1 > p.getSalary() ? m1 : p.getSalary(), (m1, m2) -> m1 < m2 ? m1 : m2);// 求最高工资方式2：
+
+        System.out.println("工资之和：" + sumSalary.get() + "," + sumSalary2 + "," + sumSalary3);
+        System.out.println("最高工资：" + maxSalary + "," + maxSalary2);
     }
 
+    public void streamAggregate() {
+        List<String> list = Arrays.asList("adnm", "admmt", "pot", "xbangd", "weoujgsd");
+        Optional<String> max = list.stream().max(Comparator.comparing(String::length));
+        System.out.println("最长的字符串：" + max.get());
+
+        List<Integer> list1 = Arrays.asList(7, 6, 9, 4, 11, 6);
+        Optional<Integer> max1 = list1.stream().max(Integer::compareTo);// 自然排序
+        Optional<Integer> max2 = list1.stream().max(new Comparator<Integer>() {// 自定义排序
+            @Override
+            public int compare(Integer o1, Integer o2) {
+                return o1.compareTo(o2);
+            }
+        });
+        System.out.println("自然排序的最大值：" + max1.get());
+        System.out.println("自定义排序的最大值：" + max2.get());
+
+        long count = list1.stream().filter(x -> x > 5).count();
+        System.out.println("list1集合中大于5的数量：" + count);
+    }
 
 }
 
